@@ -36,18 +36,15 @@ func LoadConfigFromEnv() (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load .env file: %w", err)
 	}
-
 	// Ler variáveis de ambiente
 	cfg := &Config{
 		Dialect: os.Getenv("DB_DIALECT"),
 		DSN:     os.Getenv("DB_DSN"),
 	}
-
 	// Validar configuração
 	if cfg.Dialect == "" || cfg.DSN == "" {
 		return nil, fmt.Errorf("missing required configuration: Dialect or DSN")
 	}
-
 	return cfg, nil
 }
 
