@@ -2,6 +2,7 @@ package whatsapp
 
 import (
 	"fmt"
+	"strings"
 
 	"go.mau.fi/whatsmeow/types/events"
 )
@@ -9,6 +10,12 @@ import (
 func eventHandler(evt interface{}) {
 	switch v := evt.(type) {
 	case *events.Message:
-		fmt.Println("Received a message!", v.Message.GetConversation())
+		GetContact(v)
 	}
+}
+
+func GetContact(m *events.Message) {
+	senderJID := m.Info.Sender.User
+	contactNumber := strings.Split(senderJID, "@")[0]
+	fmt.Println("Número do contato:", contactNumber)
 }
