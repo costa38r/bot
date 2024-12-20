@@ -3,6 +3,7 @@ module github.com/costa38r/bot
 go 1.22.2
 
 require (
+	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/mdp/qrterminal v1.0.1
 	go.mau.fi/whatsmeow v0.0.0-20241215104421-68b0856cce22

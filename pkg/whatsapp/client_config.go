@@ -2,11 +2,15 @@ package whatsapp
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"path/filepath"
+
+	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mdp/qrterminal"
 	"go.mau.fi/whatsmeow"
@@ -22,11 +26,35 @@ type Client struct {
 // Container wraps the SQL store container for custom usage.
 type Container struct {
 	*sqlstore.Container
+	db      *sql.DB
+	dialect string
+	log     waLog.Logger
 }
 
 // ConfigContainer sets up the SQL store container for WhatsApp data persistence.
 func ConfigContainer() (*Container, error) {
-	container, err := sqlstore.New("sqlite3", "file:examplestore.db?_foreign_keys=on", waLog.Stdout("Database", "DEBUG", true))
+	// Resolve the .env file path
+	envPath, err := filepath.Abs(".env")
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve .env file path: %w", err)
+	}
+	// load the .env file
+	err = godotenv.Load(envPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load .env file: %w", err)
+	}
+
+	// Read database configuration from environment variables
+	dialect := os.Getenv("DB_DIALECT")
+	dsn := os.Getenv("DB_DSN")
+	logLevel := "DEBUG"
+	dbLog := waLog.Stdout("Database", logLevel, true)
+
+	if dialect == "" || dsn == "" {
+		return nil, fmt.Errorf("missing required database configuration", nil)
+	}
+
+	container, err := sqlstore.New(dialect, dsn, dbLog)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create storage container: %w", err)
 	}
