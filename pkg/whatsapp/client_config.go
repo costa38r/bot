@@ -2,13 +2,10 @@ package whatsapp
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"path/filepath"
 
 	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
@@ -26,37 +23,46 @@ type Client struct {
 // Container wraps the SQL store container for custom usage.
 type Container struct {
 	*sqlstore.Container
-	db      *sql.DB
-	dialect string
-	log     waLog.Logger
 }
 
-// ConfigContainer sets up the SQL store container for WhatsApp data persistence.
-func ConfigContainer() (*Container, error) {
-	// Resolve the .env file path
-	envPath, err := filepath.Abs(".env")
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve .env file path: %w", err)
-	}
-	// load the .env file
-	err = godotenv.Load(envPath)
+type Config struct {
+	Dialect string
+	DSN     string
+}
+
+func LoadConfigFromEnv() (*Config, error) {
+	// Carregar o arquivo .env
+	err := godotenv.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load .env file: %w", err)
 	}
 
-	// Read database configuration from environment variables
-	dialect := os.Getenv("DB_DIALECT")
-	dsn := os.Getenv("DB_DSN")
-	logLevel := "DEBUG"
-	dbLog := waLog.Stdout("Database", logLevel, true)
-
-	if dialect == "" || dsn == "" {
-		return nil, fmt.Errorf("missing required database configuration", nil)
+	// Ler variáveis de ambiente
+	cfg := &Config{
+		Dialect: os.Getenv("DB_DIALECT"),
+		DSN:     os.Getenv("DB_DSN"),
 	}
 
-	container, err := sqlstore.New(dialect, dsn, dbLog)
+	// Validar configuração
+	if cfg.Dialect == "" || cfg.DSN == "" {
+		return nil, fmt.Errorf("missing required configuration: Dialect or DSN")
+	}
+
+	return cfg, nil
+}
+
+// ConfigContainer sets up the SQL store container for WhatsApp data persistence.
+func ConfigContainer() (*Container, error) {
+	cfg, err := LoadConfigFromEnv()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create storage container: %w", err)
+		fmt.Println("Error loading configuration:", err)
+		return nil, err
+	}
+
+	dbLog := waLog.Stdout("Database", "DEBUG", true)
+	container, err := sqlstore.New(cfg.Dialect, cfg.DSN, dbLog)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create container: %w", err)
 	}
 	return &Container{Container: container}, nil
 }
