@@ -7,20 +7,10 @@ import (
 )
 
 func main() {
-	container, err := whatsapp.ConfigContainer()
-	if err != nil {
-		fmt.Println("Error configuring container:", err)
-		return
-	}
 
-	client, err := whatsapp.ConfigClient(container)
+	err := whatsapp.RunClient()
 	if err != nil {
-		fmt.Println("Error configuring client:", err)
-		return
-	}
+		fmt.Println("error running client: ", err)
 
-	err = client.RunClient()
-	if err != nil {
-		fmt.Println("Error running client:", err)
 	}
 }
