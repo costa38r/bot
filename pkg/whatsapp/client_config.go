@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/joho/godotenv"
+	"github.com/costa38r/bot/config"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mdp/qrterminal"
 	"go.mau.fi/whatsmeow"
@@ -17,47 +17,19 @@ import (
 
 // Client wraps the WhatsApp client to add custom methods.
 type Client struct {
-	*whatsmeow.Client
+    *whatsmeow.Client
 }
 
 // Container wraps the SQL store container for custom usage.
 type Container struct {
-	*sqlstore.Container
+    *sqlstore.Container
 }
 
-type Config struct {
-	Dialect string
-	DSN     string
-}
-
-func LoadConfigFromEnv() (*Config, error) {
-	// Carregar o arquivo .env
-	err := godotenv.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load .env file: %w", err)
-	}
-	// Ler variáveis de ambiente
-	cfg := &Config{
-		Dialect: os.Getenv("DB_DIALECT"),
-		DSN:     os.Getenv("DB_DSN"),
-	}
-	// Validar configuração
-	if cfg.Dialect == "" || cfg.DSN == "" {
-		return nil, fmt.Errorf("missing required configuration: Dialect or DSN")
-	}
-	return cfg, nil
-}
 
 // ConfigContainer sets up the SQL store container for WhatsApp data persistence.
-func ConfigContainer() (*Container, error) {
-	cfg, err := LoadConfigFromEnv()
-	if err != nil {
-		fmt.Println("Error loading configuration:", err)
-		return nil, err
-	}
-
+func ConfigContainer(cfg *config.Config) (*Container, error) {
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
-	container, err := sqlstore.New(cfg.Dialect, cfg.DSN, dbLog)
+	container, err := sqlstore.New(cfg.WhatsApp.Dialect,cfg.WhatsApp.DSN, dbLog)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container: %w", err)
 	}

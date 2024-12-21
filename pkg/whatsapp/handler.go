@@ -1,31 +1,60 @@
 package whatsapp
 
 import (
-	"context"
+	"fmt"
+	"strings"
 
 	"github.com/costa38r/bot/pkg/threadcache"
+	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 )
+
+type Sender struct{
+	*types.JID
+}
+
 
 func eventHandler(evt interface{}) {
 	switch v := evt.(type) {
 	case *events.Message:
-		GetContact(v)
+		sender, err := GetContact(v)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		sender.HanlderMessage()
 	}
 }
 
-func GetContact(m *events.Message) {
-	//senderJID := m.Info.Sender.User
-	//contactNumber := strings.Split(senderJID, "@")[0]
+func GetContact(m *events.Message ) (*Sender,error) {
 
-	ctx := context.Background()
-
-	cfg := &threadcache.RedisClientConfig{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
+	senderJID := m.Info.Sender.User
+	if senderJID == "" {
+		return nil, fmt.Errorf("senderJID is empty")
+	}
+	contactNumber := strings.Split(senderJID, "@")[0]
+	if contactNumber == "" {
+		return nil, fmt.Errorf("contactNumber is empty")
 	}
 
-	threadcache.CheckIfThreadExists(ctx, cfg, "thread1", "this is a test value")
+	return &Sender{&types.JID{User: contactNumber}}, nil
 
+}
+
+func (s *Sender) HanlderMessage() error {
+
+	rdb,err := threadcache.NewRedisClient()
+	if err != nil {
+		fmt.Println("error creating redis client: ", err)
+	}
+	
+	exists, err := threadcache.CheckValueExists(rdb, s.User)
+	if err != nil {
+		fmt.Println("error checking value in redis: ", err)
+
+	}
+
+	print(exists)
+
+	return nil
 }

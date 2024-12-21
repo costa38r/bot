@@ -1,10 +1,15 @@
 // RunClient sets up, connects, and manages the WhatsApp client lifecycle.
 package whatsapp
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/costa38r/bot/config"
+)
 
 func RunClient() error {
-	container, err := ConfigContainer()
+	cfg := config.LoadConfig()
+	container, err := ConfigContainer(cfg)
 	if err != nil {
 		return fmt.Errorf("error configuring container: %w", err)
 	}
