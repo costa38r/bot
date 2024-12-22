@@ -71,7 +71,6 @@ func (c *Client) ConnectClient() error {
 }
 
 
-
 // CloseClient disconnects the WhatsApp client.
 func (c *Client) CloseClient() {
     fmt.Println("Disconnecting client...")
