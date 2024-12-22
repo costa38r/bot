@@ -4,24 +4,28 @@ import (
 	"context"
 
 	"github.com/costa38r/bot/config"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
-
-
-func NewRedisClient()(*redis.Client, error){
-	cfg := config.LoadConfig()
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.Redis.Addr,
-		Password: cfg.Redis.Password,
-		DB:       cfg.Redis.DB,
-	})
-
-	_, err := rdb.Ping(context.Background()).Result()
-	if err != nil {
-		return nil,err
-	}
-
-	return rdb, nil
+type RedisClient struct {
+	*redis.Client
 }
 
+// NewRedisClient cria e inicializa um novo cliente Redis e retorna uma instância de RedisClient
+func NewRedisClient(ctx context.Context) (*RedisClient, error) {
+
+	cfg := config.GetConfig()
+	client := redis.NewClient(&redis.Options{
+		Addr:     cfg.Redis.Addr,
+		Password: cfg.Redis.Password,
+		DB:      cfg.Redis.DB,
+	})
+
+	// Teste a conexão com o Redis
+	_, err := client.Ping(ctx).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	return &RedisClient{Client: client}, nil
+}

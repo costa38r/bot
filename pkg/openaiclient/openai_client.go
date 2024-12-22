@@ -2,12 +2,23 @@ package openaiclient
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/costa38r/bot/config"
 )
 
-// NewOpenAIClient cria uma nova instância de OpenAIClient.
+
+const (
+    createThreadParam     = "/threads"
+    AddMsgToThreadParam   = "/threads/%s/messages"
+    CreateRunParam        = "/threads/%s/runs"
+    GetRunResponseParam   = "/threads/%s/runs/%s"
+    GetMessagesParam      = "/threads/%s/messages"
+)
+
 func NewOpenAIClient(apiKey string) *OpenAIClient {
     return &OpenAIClient{
         APIKey:     apiKey,
@@ -15,11 +26,12 @@ func NewOpenAIClient(apiKey string) *OpenAIClient {
     }
 }
 
-// CreateThread cria uma nova thread.
-func (c *OpenAIClient) CreateThread() (*ThreadResponse, error) {
-    url := "https://api.openai.com/v1/threads"
+func (c *OpenAIClient) CreateThread(ctx context.Context) (*ThreadResponse, error) {
 
-    req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(``)))
+    cfg := config.GetConfig()
+    url := cfg.OpenAiConfig.URLBase + createThreadParam
+
+    req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer([]byte(``)))
     if err != nil {
         return nil, fmt.Errorf("failed to create request: %w", err)
     }
@@ -45,20 +57,21 @@ func (c *OpenAIClient) CreateThread() (*ThreadResponse, error) {
     return &threadResponse, nil
 }
 
-// AddMsgToThread adiciona uma mensagem a uma thread.
-func (c *OpenAIClient) AddMsgToThread(threadID, content string) (*Message, error) {
-    url := fmt.Sprintf("https://api.openai.com/v1/threads/%s/messages", threadID)
+func (c *OpenAIClient) AddMsgToThread(ctx context.Context, threadID, content string) (*Message, error) {
+    cfg := config.GetConfig()
+    url := fmt.Sprintf(cfg.OpenAiConfig.URLBase+AddMsgToThreadParam, threadID)
 
     message := map[string]string{
         "role":    "user",
         "content": content,
     }
+
     messageJSON, err := json.Marshal(message)
     if err != nil {
         return nil, fmt.Errorf("failed to marshal message: %w", err)
     }
 
-    req, err := http.NewRequest("POST", url, bytes.NewBuffer(messageJSON))
+    req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(messageJSON))
     if err != nil {
         return nil, fmt.Errorf("failed to create request: %w", err)
     }
@@ -84,9 +97,9 @@ func (c *OpenAIClient) AddMsgToThread(threadID, content string) (*Message, error
     return &messageResponse, nil
 }
 
-// CreateRun cria uma nova execução.
 func (c *OpenAIClient) CreateRun(threadID, assistantID string) (*CreateRunResponse, error) {
-    url := fmt.Sprintf("https://api.openai.com/v1/threads/%s/runs", threadID)
+    cfg := config.GetConfig()
+    url := fmt.Sprintf(cfg.OpenAiConfig.URLBase+CreateRunParam, threadID)
     payload := map[string]string{
         "assistant_id": assistantID,
     }
@@ -120,9 +133,9 @@ func (c *OpenAIClient) CreateRun(threadID, assistantID string) (*CreateRunRespon
     return &createRunResponse, nil
 }
 
-// GetRunResponse obtém a resposta de uma execução.
 func (c *OpenAIClient) GetRunResponse(threadID, runID string) (*RunResponse, error) {
-    url := fmt.Sprintf("https://api.openai.com/v1/threads/%s/runs/%s", threadID, runID)
+    cfg:= config.GetConfig()
+    url := fmt.Sprintf(cfg.OpenAiConfig.URLBase+GetRunResponseParam, threadID, runID)
     req, err := http.NewRequest("GET", url, nil)
     if err != nil {
         return nil, fmt.Errorf("failed to create request: %w", err)
@@ -148,9 +161,9 @@ func (c *OpenAIClient) GetRunResponse(threadID, runID string) (*RunResponse, err
     return &runResponse, nil
 }
 
-// GetMessages obtém as mensagens de uma thread.
 func (c *OpenAIClient) GetMessages(threadID string) (*MessageListResponse, error) {
-    url := fmt.Sprintf("https://api.openai.com/v1/threads/%s/messages", threadID)
+    cfg := config.GetConfig()
+    url := fmt.Sprintf(cfg.OpenAiConfig.URLBase+GetMessagesParam, threadID)
     req, err := http.NewRequest("GET", url, nil)
     if err != nil {
         return nil, fmt.Errorf("failed to create request: %w", err)
@@ -176,7 +189,6 @@ func (c *OpenAIClient) GetMessages(threadID string) (*MessageListResponse, error
     return &messageListResponse, nil
 }
 
-// GetAssistantMessages filtra as mensagens do assistente.
 func (c *OpenAIClient) GetAssistantMessages(messages []Message) []Message {
     var assistantMessages []Message
     for _, message := range messages {
@@ -187,7 +199,6 @@ func (c *OpenAIClient) GetAssistantMessages(messages []Message) []Message {
     return assistantMessages
 }
 
-// setHeaders define os cabeçalhos comuns para as requisições.
 func (c *OpenAIClient) setHeaders(req *http.Request) {
     req.Header.Set("Authorization", "Bearer "+c.APIKey)
     req.Header.Set("Content-Type", "application/json")

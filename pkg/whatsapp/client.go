@@ -1,14 +1,13 @@
 package whatsapp
 
 import (
+	"context"
 	"fmt"
-
-	"github.com/costa38r/bot/config"
 )
 
-func RunClient() error {
-    cfg := config.LoadConfig()
-    container, err := ConfigContainer(cfg)
+func RunClient(ctx context.Context) error {
+
+    container, err := ConfigContainer()
     if err != nil {
         return fmt.Errorf("error configuring container: %w", err)
     }
@@ -16,7 +15,7 @@ func RunClient() error {
     if err != nil {
         return fmt.Errorf("error configuring client: %w", err)
     }
-    if err := client.ConnectClient(); err != nil {
+    if err := client.ConnectClient(ctx); err != nil {
         return fmt.Errorf("error connecting client: %w", err)
     }
     waitForShutdown(client)

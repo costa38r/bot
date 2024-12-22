@@ -14,37 +14,30 @@ import (
 func (c *Client) eventHandler(evt interface{}) {
     switch v := evt.(type) {
     case *events.Message:
-        c.HandlerMessage(v)
+        c.HandlerMessage(context.Background(), v)
     }
 }
 
-func (c *Client) HandlerMessage(v *events.Message) {
+func (c *Client) HandlerMessage(ctx context.Context, v *events.Message) {
     contactMsg := v.RawMessage.GetConversation()
 
     if contactMsg != "" {
-        response, err := openaiclient.OpenAiHandle(contactMsg)
+        response, err := openaiclient.OpenAiHandle(ctx, contactMsg)
         if err != nil {
             fmt.Printf("Error handling message: %v\n", err)
             return
         }
 
-        // Construir o JID completo do remetente original
         senderJID := types.NewJID(v.Info.Sender.User, types.DefaultUserServer)
 
-        // Criar a mensagem de resposta
         message := &waProto.Message{
             Conversation: proto.String(response),
         }
 
         if message != nil {
-
-        // Enviar a mensagem de resposta
-        _, err = c.SendMessage(context.Background(), senderJID, message)
-        if err != nil {
-            fmt.Printf("Error sending message: %v\n", err)
+            if _, err = c.SendMessage(ctx, senderJID, message); err != nil {
+                fmt.Printf("Error sending message: %v\n", err)
+            }
         }
-    } else {
-        return
-    }
     }
 }
